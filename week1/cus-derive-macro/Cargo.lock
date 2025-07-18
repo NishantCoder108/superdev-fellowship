@@ -35,10 +35,6 @@ dependencies = [
 [[package]]
 name = "serialize_macro_traits"
 version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
-]
 
 [[package]]
 name = "syn"
