@@ -1,5 +1,11 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::fmt::Error;
+
+pub trait Serialize {
+    fn serialize(&self) -> Vec<u8>; //0,1....
+}
+
+pub trait Deserialize: Sized {
+    fn deserialize(base: &[u8]) -> Result<Self, Error>; // back to struct
 }
 
 #[cfg(test)]
