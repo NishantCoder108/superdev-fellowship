@@ -1,4 +1,5 @@
 
+#### Assignment Link: https://petal-estimate-4e9.notion.site/Assignment-1-Simple-macro-2327dfd1073580008ce2d5dfe3b06dd5
 
 ## Week 1 - Learning
 
