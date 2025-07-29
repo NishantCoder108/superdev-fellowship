@@ -1,0 +1,114 @@
+diff --git a/lang/syn/src/parser/accounts/constraints.rs b/lang/syn/src/parser/accounts/constraints.rs
+index 39617ea4..02787e89 100644
+--- a/lang/syn/src/parser/accounts/constraints.rs
++++ b/lang/syn/src/parser/accounts/constraints.rs
+@@ -1,6 +1,7 @@
+ use crate::*;
+ use syn::parse::{Error as ParseError, Result as ParseResult};
+-use syn::{bracketed, Token};
++use syn::token;
++use syn::{bracketed, Expr, Token};
+ 
+ pub fn parse(f: &syn::Field, f_ty: Option<&Ty>) -> ParseResult<ConstraintGroup> {
+     let mut constraints = ConstraintGroupBuilder::new(f_ty);
+@@ -359,19 +360,91 @@ pub fn parse_token(stream: ParseStream) -> ParseResult<ConstraintToken> {
+                     _ => return Err(ParseError::new(ident.span(), "Invalid attribute")),
+                 }
+             } else {
++                // stream.parse::<Token![=]>()?;
++                // let span = ident
++                //     .span()
++                //     .join(stream.span())
++                //     .unwrap_or_else(|| ident.span());
++                // let seeds;
++                // let bracket = bracketed!(seeds in stream);
++                // ConstraintToken::Seeds(Context::new(
++                //     span.join(bracket.span).unwrap_or(span),
++                //     ConstraintSeeds {
++                //         seeds: seeds.parse_terminated(Expr::parse)?,
++                //     },
++                // ))
++
++                // // ---- NEW CODE First version ----
++                //  stream.parse::<Token![=]>()?;
++                // let span = ident
++                //     .span()
++                //     .join(stream.span())
++                //     .unwrap_or_else(|| ident.span());
++                // let seeds;
++                // let bracket = bracketed!(seeds in stream);
++                // ConstraintToken::Seeds(Context::new(
++                //     span.join(bracket.span).unwrap_or(span),
++                //     ConstraintSeeds {
++                //         seeds: {
++                //             let parsed_seeds = seeds.parse_terminated(Expr::parse)?;
++                //             for expr in &parsed_seeds {
++                //                 println!("Parsed seed: {:?}", expr); // <--- ADD THIS
++                //             }
++                //             parsed_seeds
++                //         },
++                //     },
++                // ))
++
++                // // ---- NEW CODE Second version ----
++
++                // // FOr List checking : ` List(Punctuated<Expr, Token![,]>)` "I want to parse multiple Rust expressions, separated by commas."
++                // stream.parse::<Token![=]>()?;
++                // let span = ident
++                //     .span()
++                //     .join(stream.span())
++                //     .unwrap_or_else(|| ident.span());
++
++                // let lookahead = stream.lookahead1();
++                // if lookahead.peek(token::Bracket) {
++                //     let seeds;
++                //     let bracket = bracketed!(seeds in stream);
++                //     ConstraintToken::Seeds(Context::new(
++                //         span.join(bracket.span).unwrap_or(span),
++                //         ConstraintSeeds::seeds(seeds.parse_terminated(Expr::parse)?),
++                //     ))
++                // } else {
++                //     let expr: Expr = stream.parse()?;
++                //     ConstraintToken::Seeds(Context::new(span, ConstraintSeeds::Expr(expr)))
++                // }
++
++                // ---- NEW CODE Third version ----
+                 stream.parse::<Token![=]>()?;
+                 let span = ident
+                     .span()
+                     .join(stream.span())
+-                    .unwrap_or_else(|| ident.span());
+-                let seeds;
+-                let bracket = bracketed!(seeds in stream);
+-                ConstraintToken::Seeds(Context::new(
+-                    span.join(bracket.span).unwrap_or(span),
+-                    ConstraintSeeds {
+-                        seeds: seeds.parse_terminated(Expr::parse)?,
+-                    },
+-                ))
++                    .unwrap_or_else(|| ident.span()); //span is identity of location of the token
++
++                let lookahead = stream.lookahead1();
++                // If it's [a, b], then use bracketed + parse_terminated
++                if lookahead.peek(token::Bracket) {
++                    let seeds;
++                    let bracket = bracketed!(seeds in stream); //Tokens inside [...]
++
++                    ConstraintToken::Seeds(Context::new(
++                        span.join(bracket.span).unwrap_or(span),
++                        ConstraintSeeds {
++                            seeds: (seeds.parse_terminated(Expr::parse)?),
++                        },
++                    ))
++                } else {
++                    //Else it must be a single expression like my_func(...)
++
++                    let expr: Expr = stream.parse()?;
++                    let mut seed_list = Punctuated::new(); //it create empty list of expr ,[]
++                    seed_list.push(expr);
++
++                    ConstraintToken::Seeds(Context::new(span, ConstraintSeeds { seeds: seed_list }))
++                }
+             }
+         }
+         "realloc" => {
