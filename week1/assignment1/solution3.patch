@@ -1,0 +1,171 @@
+From 74d541b30692f3d98311143730cd5afd602925a1 Mon Sep 17 00:00:00 2001
+From: Nishant <69218488+NishantCoder108@users.noreply.github.com>
+Date: Mon, 28 Jul 2025 18:08:24 +0530
+Subject: [PATCH 1/2] Implement todoapp macros
+
+---
+ traity_trait/src/lib.rs | 62 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 59 insertions(+), 3 deletions(-)
+
+diff --git a/traity_trait/src/lib.rs b/traity_trait/src/lib.rs
+index ee493e4..0880b51 100644
+--- a/traity_trait/src/lib.rs
++++ b/traity_trait/src/lib.rs
+@@ -1,16 +1,72 @@
+ use proc_macro::TokenStream;
+ use quote::quote;
+-use syn::{parse_macro_input, Data, DeriveInput, Fields, FieldsNamed};
++use syn::{Data, DeriveInput, Fields, parse_macro_input};
++
++fn todo_app_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream, syn::Error> {
++
++
++    let name = &input.ident;
++    let attrs = &input.attrs;
++    match input.data {
++        Data::Struct(todo_struct) => match todo_struct.fields {
++            Fields::Named(todo_fields) => {
++                let todo_field = todo_fields
++                    .named
++                    .iter()
++                    .map(|todo_field_item| {
++                        let field_name = todo_field_item.ident.as_ref().unwrap();
++                        let field_ty = &todo_field_item.ty;
++                        let pascal_converter = pascal_case(&field_name.to_string());
++                        let renamed = format!("TodoApp{}", pascal_converter);
++
++                        quote! {
++                            #[serde(rename = #renamed)]
++                            #field_name : #field_ty
++                        }
++                    })
++                    .collect::<Vec<_>>();
++
++                Ok(quote! {
++                    #(#attrs)*
++                    struct #name {
++                        #(#todo_field),*
++                    }
++                })
++            }
++            _ => panic!("Unnamed field is not supported"),
++        },
++        _ => panic!("Only struct types are supported"),
++    }
++
+ 
+-fn todo_app_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream, syn::Error> {    
+-   
+ }
+ 
+ #[proc_macro_attribute]
+ pub fn todo_app(_args: TokenStream, input: TokenStream) -> TokenStream {
++
++
+     let input = parse_macro_input!(input as DeriveInput);
+     match todo_app_impl(input) {
+         Ok(tokens) => tokens.into(),
+         Err(err) => err.to_compile_error().into(),
+     }
++
++
++}
++
++fn pascal_case(chars: &String) -> String {
++
++
++    chars
++        .split("_")
++        .map(|char_item| {
++            let mut word = char_item.chars();
++            match word.next() {
++                Some(c) => c.to_uppercase().chain(word).collect::<String>(),
++                None => String::new(),
++            }
++        })
++        .collect()
++
++        
+ }
+-- 
+2.43.0
+
+
+From 9b44b45d3541bb2438bb8e5a1508cf082fb4fc43 Mon Sep 17 00:00:00 2001
+From: Nishant <69218488+NishantCoder108@users.noreply.github.com>
+Date: Mon, 28 Jul 2025 18:23:38 +0530
+Subject: [PATCH 2/2] Fix formatting
+
+---
+ traity_trait/src/lib.rs | 28 ++++++++++------------------
+ 1 file changed, 10 insertions(+), 18 deletions(-)
+
+diff --git a/traity_trait/src/lib.rs b/traity_trait/src/lib.rs
+index 0880b51..1b2987e 100644
+--- a/traity_trait/src/lib.rs
++++ b/traity_trait/src/lib.rs
+@@ -1,13 +1,12 @@
+ use proc_macro::TokenStream;
+ use quote::quote;
+-use syn::{Data, DeriveInput, Fields, parse_macro_input};
++use syn::{Data, DeriveInput, Error, Fields, parse_macro_input};
+ 
+ fn todo_app_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream, syn::Error> {
+-
+-
+-    let name = &input.ident;
+-    let attrs = &input.attrs;
+-    match input.data {
++    let input_data = input.clone();
++    let name = input_data.ident;
++    let attrs = input_data.attrs;
++    match input_data.data {
+         Data::Struct(todo_struct) => match todo_struct.fields {
+             Fields::Named(todo_fields) => {
+                 let todo_field = todo_fields
+@@ -33,30 +32,25 @@ fn todo_app_impl(input: DeriveInput) -> Result<proc_macro2::TokenStream, syn::Er
+                     }
+                 })
+             }
+-            _ => panic!("Unnamed field is not supported"),
++            _ => Err(Error::new_spanned(
++                input,
++                "Only struct with name fields are supported",
++            )),
+         },
+-        _ => panic!("Only struct types are supported"),
++        _ => Err(Error::new_spanned(input, "Only structs are supported")),
+     }
+-
+-
+ }
+ 
+ #[proc_macro_attribute]
+ pub fn todo_app(_args: TokenStream, input: TokenStream) -> TokenStream {
+-
+-
+     let input = parse_macro_input!(input as DeriveInput);
+     match todo_app_impl(input) {
+         Ok(tokens) => tokens.into(),
+         Err(err) => err.to_compile_error().into(),
+     }
+-
+-
+ }
+ 
+ fn pascal_case(chars: &String) -> String {
+-
+-
+     chars
+         .split("_")
+         .map(|char_item| {
+@@ -67,6 +61,4 @@ fn pascal_case(chars: &String) -> String {
+             }
+         })
+         .collect()
+-
+-        
+ }
+-- 
+2.43.0
+
