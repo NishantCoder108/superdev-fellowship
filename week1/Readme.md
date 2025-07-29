@@ -1,6 +1,6 @@
-<details>
 
- <summary> <strong> Week 1 - Learning </strong> </summary> </summary>
+
+## Week 1 - Learning
 
 1. **proc_macro** - It is the plugin of rust compiler so we write code that write more code. We can write custom derive macro, attribute macro and function macro.
 2. **TokenStream** –  It is input/output for interacting with rust compiler. It converts input Rust code into tokens. Basically rust code will convert into TokenStream.
@@ -129,4 +129,3 @@ pub fn deserialise_number_struct(input: TokenStream) -> TokenStream {
 }
 
 ```
-</details>
