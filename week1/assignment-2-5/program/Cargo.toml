@@ -1,0 +1,21 @@
+[package]
+name = "program"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anchor-lang = { path = "../anchor/lang", features = [
+    "derive",                  # Enables #[derive(Accounts)] and other Anchor macros
+    "event-cpi",               # Supports emitting events in cross-program invocations (CPI)
+    "interface-instructions",  # Allows defining reusable interfaces between programs
+    "idl-build",               # Generates IDL file automatically during build
+    "anchor-debug",            # Adds extra debug logs during execution
+    "init-if-needed",          # Initializes account only if it’s not already created
+    "allow-missing-optionals", # Allows missing optional fields during deserialization
+
+] }
+solana-program = "2"
+
+[features]
+no-entrypoint = []
+default = ["no-entrypoint"]
